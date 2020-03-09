@@ -8,11 +8,13 @@ int ic = 0, dc = 0, l;
 Boolean lableflag;
 Instruction code[MEM_SIZE-DATA_SIZE];
 Instruction data[DATA_SIZE];
+List labelTable;
 
 int main(int argc, char **argv){
 	FILE *fd, *fdob, *fdext, *fdent;
 	char buffer[LINE_LENGTH] = {0};
 	int i,ch;
+	Node *ptr;
 	
 	/*No files error*/
 	if(argc == 1){
@@ -41,7 +43,6 @@ int main(int argc, char **argv){
 		}
 
 		buffer[i]='\0';
-		printf("%s",islable(buffer)?"labled\n":"notlabled\n");
 	}
 	return 0;
 }
