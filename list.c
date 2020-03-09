@@ -1,5 +1,7 @@
 #include "types.h"
 
+extern enum error errorFlag;
+
 /*adds the new node if label was not found in list*/
 int addNode(List *list, char *str, int ic, int type){
 	Node *ptr = list->head;
@@ -7,8 +9,10 @@ int addNode(List *list, char *str, int ic, int type){
 	Node *newNode;
 	
 	while(ptr){
-		if(!(strcmp(str,ptr->name)))
-			return collisionError;
+		if(!(strcmp(str,ptr->name))){
+			errorFlag = collisionError;
+			return 1;
+		}
 		prev=ptr;
 		ptr=ptr->next;
 	}

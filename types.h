@@ -3,9 +3,9 @@
 #include <ctype.h>
 #include <string.h>
 
-enum labelType {lcode,ldata,lextrn,lentry};
+enum directives {lstring=0,ldata,lextrn,lentry,lcode};
 
-enum errors {collisionError=1};
+enum errors {none=0,collisionError};
 
 typedef struct{
 	char bit:1;
@@ -19,7 +19,7 @@ typedef struct{
 typedef struct Node{
 	struct Node *next;
 	char name[81];
-	enum labelType ltype;
+	enum directives ltype;
 	int value;
 } Node;
 
@@ -28,5 +28,5 @@ typedef struct{
 } List;
 
 int addNode(List *, char *, int, int);
-int islable(char *);
+int isLabel(char *);
 
