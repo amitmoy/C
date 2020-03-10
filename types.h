@@ -5,7 +5,7 @@
 
 enum directives {lstring=0,ldata,lextrn,lentry,lcode};
 
-enum errors {none=0,collisionError};
+enum errors {none=0,collisionError,wrongLabel};
 
 typedef struct{
 	char bit:1;
@@ -29,4 +29,5 @@ typedef struct{
 
 int addNode(List *, char *, int, int);
 int isLabel(char *);
+int isDirective(char *);
 

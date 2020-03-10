@@ -1,17 +1,19 @@
 #include "types.h"
 
 extern enum error errorFlag;
+extern char *instructionList[];
 
 /*adds the new node if label was not found in list*/
 int addNode(List *list, char *str, int ic, int type){
+	int i;
 	Node *ptr = list->head;
 	Node *prev;
 	Node *newNode;
+
 	
 	while(ptr){
 		if(!(strcmp(str,ptr->name))){
-			errorFlag = collisionError;
-			return 1;
+			return collisionError;
 		}
 		prev=ptr;
 		ptr=ptr->next;

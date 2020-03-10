@@ -1,0 +1,4 @@
+b:
+.string
+.data
+b: .string

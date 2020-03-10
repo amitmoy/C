@@ -59,10 +59,11 @@ int main(int argc, char **argv){
 		}
 		
 		if(labelFlag.bit){
+			printf("\nlabel detect %s\n",label);
 			while(buffer[k++]!=':');
-			if((drctv = isDirective(buffer[k]))==lstring || drctv==ldata){
+			if((drctv = isDirective(buffer+k))==lstring || drctv==ldata){
 				addNode(&labelTable, label, ic, drctv);
-				printf("\n string drc\n");
+				printf("\n string or data drc\n");
 			}
 		}
 	}
