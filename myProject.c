@@ -1,23 +1,18 @@
 #include "types.h"
 
-#define MEM_SIZE 4096
-#define DATA_SIZE 1024
-#define LINE_LENGTH 80
-
 int ic = 0, dc = 0, l;
-Boolean lableflag;
 Instruction code[MEM_SIZE-DATA_SIZE];
 Instruction data[DATA_SIZE];
 char *instructionList[]={"mov","cmp","add","sub","lea","clr","not","inc","dec","jmp","bne","red","prn","jsr","rts","stop"};
 char *directiveList[]={".string",".data",".extern",".entry"};
 List labelTable;
-Boolean labelFlag;
 char label[LINE_LENGTH];
+enum Boolean labelFlag;
 enum errors errorFlag;
 
 
 int main(int argc, char **argv){
-	FILE *fd, *fdob, *fdext, *fdent;
+	FILE *fd;
 	char buffer[LINE_LENGTH] = {0};
 	int i,ch,k=0;
 	int drctv;
@@ -38,6 +33,7 @@ int main(int argc, char **argv){
 	while(!feof(fd)){
 		i = 0;
 		l = 1;
+		k = 0;
 		
 		/*-----Reads the line to the buffer-----*/
 		while((ch = fgetc(fd))!=EOF && ch!='\n'){
@@ -51,21 +47,29 @@ int main(int argc, char **argv){
 		
 		buffer[i]='\0';
 
-		/*checks if the instruction labeled*/
+		/*-----label check-----*/
 		if(isLabel(buffer)){
-			labelFlag.bit = 1;
+			labelFlag = t;
 		}else{
-			labelFlag.bit = 0;
+			labelFlag = f;
 		}
-		
-		if(labelFlag.bit){
-			printf("\nlabel detect %s\n",label);
+
+		/*-----string and data directive check------*/
+		if(labelFlag==t){
 			while(buffer[k++]!=':');
+			
 			if((drctv = isDirective(buffer+k))==lstring || drctv==ldata){
 				addNode(&labelTable, label, ic, drctv);
-				printf("\n string or data drc\n");
+				while(buffer[k]!='.') k++;
+				k = k + strlen(directiveList[drctv]);
+				printf("\n %s",buffer+k);
+				printf("\n data status: %d", addData((buffer+k), data, &dc, drctv));
 			}
+		} else {
+			drctv = isDirective(buffer);
 		}
+
 	}
+	while(dc--) printf("\n data : %d",(int) data[dc].bits);
 	return 0;
 }
