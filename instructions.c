@@ -146,7 +146,7 @@ int addData(char *str, Instruction *data, int *DC, int drctv){
 				case pre:
 					if(str[i] == ' ' || str[i] == '\t'){
 						i++;
-					} else if(str[i] == '"'){
+					} else if(str[i] == '\"'){
 						status = read;
 						i++;
 					} else {
@@ -172,9 +172,9 @@ int addData(char *str, Instruction *data, int *DC, int drctv){
 					break;
 				/*post status can read only whitechars*/
 				case post:
-					if(str[i]!= ' ' && str[i] != '\t'){
+					if(str[i]== ' ' || str[i] == '\t'){
 						i++;
-					} else if(str[i] == '/0'){
+					} else if(str[i] == '\0'){
 						return none;
 					} else {
 						*DC = origindc;
@@ -191,6 +191,7 @@ int addData(char *str, Instruction *data, int *DC, int drctv){
 					} else if(str[i] == '\\') { 
 						data[*DC].bits = '\\';
 						*DC = *DC + 1;
+						status = read;
 						i++;
 					} else {
 						data[*DC].bits = '\\';

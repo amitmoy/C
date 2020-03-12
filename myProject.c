@@ -59,7 +59,7 @@ int main(int argc, char **argv){
 			while(buffer[k++]!=':');
 			
 			if((drctv = isDirective(buffer+k))==lstring || drctv==ldata){
-				addNode(&labelTable, label, ic, drctv);
+				addNode(&labelTable, label, dc, drctv);
 				while(buffer[k]!='.') k++;
 				k = k + strlen(directiveList[drctv]);
 				printf("\n %s",buffer+k);
@@ -70,6 +70,6 @@ int main(int argc, char **argv){
 		}
 
 	}
-	while(dc--) printf("\n data : %d",(int) data[dc].bits);
+	while(dc--) printf("\n data : %c",(char) data[dc].bits);
 	return 0;
 }
