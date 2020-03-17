@@ -15,7 +15,7 @@ int main(int argc, char **argv){
 	FILE *fd;
 	char buffer[LINE_LENGTH] = {0};
 	int i,ch,k=0;
-	int drctv;
+	int drctv = -1;
 	
 	/*No files error*/
 	if(argc == 1){
@@ -62,14 +62,34 @@ int main(int argc, char **argv){
 				addNode(&labelTable, label, dc, drctv);
 				while(buffer[k]!='.') k++;
 				k = k + strlen(directiveList[drctv]);
-				printf("\n %s",buffer+k);
-				printf("\n data status: %d", addData((buffer+k), data, &dc, drctv));
+				addData((buffer+k), data, &dc, drctv);
+				continue;
 			}
 		} else {
 			drctv = isDirective(buffer);
+			if(drctv == lstring || drctv == ldata){
+				while(buffer[k]!='.') k++;
+				k = k + strlen(directiveList[drctv]);
+				addData((buffer+k), data, &dc, drctv);
+				continue;
+			}
 		}
 
+		printf("\ndrctv = %d, %s", drctv, buffer);
+		/*checks if .entry or .extern, if entry continue, if external adds the label*/
+		if(drctv==lentry){
+			if(labelFlag)
+				printf("Warning: Label before entry does not do anything");
+			continue;
+		} else if(drctv == lextern){
+			if(labelFlag){
+				printf("Warning: Label before extern does not do anything");
+			}
+			addExtern(buffer);
+			continue;
+		} 
+			
 	}
-	while(dc--) printf("\n data : %c",(char) data[dc].bits);
+	printList(labelTable);
 	return 0;
 }

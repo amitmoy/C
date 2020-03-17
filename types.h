@@ -7,7 +7,7 @@
 #define DATA_SIZE 1024
 #define LINE_LENGTH 80
 
-enum directives {lstring=0,ldata,lextrn,lentry,lcode};
+enum directives {lstring=0,ldata,lextern,lentry,lcode};
 
 enum errors {none=0,collisionError,wrongLabel,wrongData,numberOverflow};
 
@@ -33,4 +33,5 @@ int addNode(List *, char *, int, int);
 int isLabel(char *);
 int isDirective(char *);
 int addData(char *, Instruction *, int *, int);
-
+void printList(List);
+int addExtern(char *);

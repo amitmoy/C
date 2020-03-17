@@ -3,6 +3,7 @@ enum readingStatus {pre, read, post, minus, backslash};
 extern char *directiveList[];
 extern char label[];
 extern char *instructionList[];
+extern List labelTable;
 
 /*gets the current line the compiler reads and telling if there is a lable*/
 int isLabel(char *str){
@@ -201,8 +202,58 @@ int addData(char *str, Instruction *data, int *DC, int drctv){
 						status = read;
 						i++;
 					}
-			}
-		}
+			}/*end of switch*/
+		}/*end of while*/
 	}
 	return -1;
 }
+
+/*adds the extern label*/
+int addExtern(char *str){
+	int i=0,k=0;
+	enum readingStatus status = pre;
+	char exlabel[LINE_LENGTH] = {0};
+	while(str[i]!='.') i++;
+	i=i + strlen(".extern");
+	printf("addex start %d, ,%s,",i,str+i);
+	while(1){
+		switch(status){
+			case pre:
+				if(str[i] == ' ' || str[i] == '\t'){
+					i++;
+				} else if(isalpha(str[i]) || isdigit(str[i])){
+					exlabel[k++] = str[i++];
+					status = read;
+				} else {
+					return wrongLabel;
+				}
+				break;
+			case read:
+				if(isalpha(str[i]) || isdigit(str[i])){
+					exlabel[k++] = str[i++];
+				} else if(str[i] == ' ' || str[i] == '\t'){
+					exlabel[k] = '\0';
+					status = post;
+					i++;
+				} else if(str[i]=='\0'){
+					exlabel[k] = '\0';
+					addNode(&labelTable, exlabel, -1, lextern);
+					return none;
+				} else {
+					return wrongLabel;
+				}
+				break;
+			case post:
+				if(str[i] == ' ' || str[i] == '\t'){
+					i++;
+				} else if(str[i] == '\0'){
+					addNode(&labelTable, exlabel, -1, lextern);
+					return none;
+				} else {
+					return wrongLabel;
+				}
+		}
+	}
+	return none;
+}
+			

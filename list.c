@@ -36,6 +36,17 @@ int addNode(List *list, char *str, int ic, int type){
 	return 0;
 } 
 
-	 
+void printList(List list){
+	int i=1;
+	Node *ptr = list.head;
+	if(!(list.head)){
+		printf("\nList is empty\n");
+	} else {
+		while(ptr){
+			printf("\nNode #%d label is {%s}, Directive:%d , ic: %d", i++, ptr->name, ptr->ltype, ptr->value);
+			ptr = ptr->next;
+		}
+	}
+}	 
 
 	

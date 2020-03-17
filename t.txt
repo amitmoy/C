@@ -3,4 +3,5 @@ adad: .data 7  ,   -98	,	9
 TEST:   .string "abc"    
 .data 7,8,9
 b: .string "a\d\""
-
+.extern hello
+	.extern     hi   
