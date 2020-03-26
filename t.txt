@@ -5,3 +5,10 @@ TEST:   .string "abc"
 b: .string "a\d\""
 .extern hello
 	.extern     hi   
+add ssfef
+cmp  
+mov 
+	sub
+      lea   
+clr asda
+	 clr asda

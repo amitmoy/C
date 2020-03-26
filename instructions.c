@@ -1,5 +1,6 @@
 #include "types.h"
 enum readingStatus {pre, read, post, minus, backslash};
+enum readOperandStatus {pre, prenum, num, readlabel, reg, post, prereg, regread, postreg};
 extern char *directiveList[];
 extern char label[];
 extern char *instructionList[];
@@ -256,4 +257,118 @@ int addExtern(char *str){
 	}
 	return none;
 }
-			
+
+/*returns the instruction code of the instruction*/
+int whatInstruction(char *str){
+	int i=0,k;
+
+	while(str[i] == ' ' || str[i] == '\t') i++;
+	
+	for(k=0; k<16; k++){
+		if(!strncmp(str+i,instructionList[k], strlen(instructionList[k])))
+			return k;
+	}
+	
+	return -1;
+}
+
+
+int readOperand(char *str, int *method, instruction *value){
+	enum readOperandStatus satatus = pre;
+	char *val[LINE_LENGTH] = {0};
+	int i=0,k=0;
+	enum Boolean nonDirect = f;
+	while(1){
+		switch(status){
+			case pre:
+				if(str[i] == ' ' || str[i] == '\t'){
+					i++;
+				} else if(str[i] == '#'){
+					i++;
+					status = prenum;
+				} else if(str[i] == 'r') {
+					i++;
+					status = regread;
+				} else if(isalpha(str[i])){
+					val[k++] = str[i++];
+					status = readlabel;
+				} else if(str[i] == '*') {
+					nonDirect = t;
+					i++;
+					status = prereg;
+				} else {
+					return wrongOperand;
+				}
+				break;
+			case prenum:
+				if(str[i] == '-' || isdigit(str[i])){
+					val[k++] = str[i++];
+					status = num;
+				} else if(str[i] == '+'){
+					i++;
+					status = num;
+				} else {
+					return wrongOperand;
+				}
+				break;
+			case num:
+				if(isdigit(str[i])){
+					val[k++] = str[i++];
+				} else if(str[i] == '\t' || str[i] == ' '){
+					if(str[i-1] == '-') return wrongOperand;
+					i++;
+					val[k] = '\0';
+					value->bits = atoi(val);
+					*method = imm;
+					state = post;
+				} else if(str[i] == '\0'){
+					if(str[i-1] == '-') return wrongOperand;
+					val[k] = '\0';
+					value->bits = atoi(val);
+					*method = imm;
+					return none;
+				}else{
+					return wrongOperand;
+				}
+				break;
+			case prereg:
+				if(str[i] == 'r'){
+					val[k++] = str[i++];
+					state = regread;
+				} else {
+					return wrongOperand;
+				}
+				break;
+			case regread:
+				if(isdigit(str[i]) && (str[i]-'0')>=0 && (str[i]-'0')<=7){
+					value->bits = str[i] - '0';
+					if(nonDirect == t){
+						*method = nonDirectReg;
+					} else {
+						*method = directReg;
+					}
+					val[k++] = str[i++];
+					state = postreg;
+				}else if(nonDirect==f && (isalpha(str[i]) || isdigit(str[i]))){
+					val[k++] = str[i++];
+					state = readlabel;
+				} else if(str[i]=='\0') {
+					if(nonDirect == t){
+						return wrongOperand;
+					} else {
+						*method = direct;
+						return none;
+					}
+				}else{
+					return wrongOperand;
+				}
+				break;
+			case post:
+				if(str[i] == '\0'){
+					return none;
+				} else if(str[i] == '\t' || str[i] == ' ') {
+					i++;
+				} else {
+					return wrongOperand;
+				}
+

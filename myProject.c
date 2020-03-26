@@ -1,10 +1,10 @@
 #include "types.h"
 
-int ic = 0, dc = 0, l;
+int ic = 0, dc = 0, l, firstMethod, secondMethod;
 Instruction code[MEM_SIZE-DATA_SIZE];
 Instruction data[DATA_SIZE];
-char *instructionList[]={"mov","cmp","add","sub","lea","clr","not","inc","dec","jmp","bne","red","prn","jsr","rts","stop"};
-char *directiveList[]={".string",".data",".extern",".entry"};
+char *instructionList[]={"mov ","cmp ","add ","sub ","lea ","clr ","not ","inc ","dec ","jmp ","bne ","red ","prn ","jsr ","rts ","stop "};
+char *directiveList[]={".string ",".data ",".extern ",".entry "};
 List labelTable;
 char label[LINE_LENGTH];
 enum Boolean labelFlag;
@@ -16,6 +16,7 @@ int main(int argc, char **argv){
 	char buffer[LINE_LENGTH] = {0};
 	int i,ch,k=0;
 	int drctv = -1;
+	int instruction;
 	
 	/*No files error*/
 	if(argc == 1){
@@ -88,8 +89,30 @@ int main(int argc, char **argv){
 			addExtern(buffer);
 			continue;
 		} 
-			
+
+		/*------Its instruction-----*/
+		drctv = lcode;
+		if(labelFlag==t){
+			addNode(&labelTable, label, ic+100, drctv);
+			while(buffer[k++]!=':');
+		}
+
+		if((instruction = whatInstruction(buffer+k))==-1){
+			/*--------error-------*/
+		} else {
+			code[ic++].bits = instruction<<11;
+			while(buffer[k] == ' ' || buffer[k] == '\t') k++;
+			k = k + strlen(instructions[instruction]);
+			if(instruction>=0 && instruction<=4){
+				/*two opperands*/
+			}else if(instruction>=5 && instruction<=13){
+				/*one opperand*/
+			}else{
+				/*no opperands*/
+			}
+		}	
+
 	}
-	printList(labelTable);
+	while(ic--) printf("\n%d is : %u\n",ic,code[ic].bits);
 	return 0;
 }

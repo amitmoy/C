@@ -9,7 +9,10 @@
 
 enum directives {lstring=0,ldata,lextern,lentry,lcode};
 
-enum errors {none=0,collisionError,wrongLabel,wrongData,numberOverflow};
+enum errors {none=0,collisionError,wrongLabel,wrongData,numberOverflow,wrongOperand};
+enum instruction {mov=0,cmp,add,sub,lea,clr,inot,inc,dec,jmp,bne,red,prn,jsr,rts,stop};
+
+enum addressingMethods {imm=0, direct, nonDirectReg, directReg};
 
 enum Boolean {f=0,t};
 
@@ -35,3 +38,4 @@ int isDirective(char *);
 int addData(char *, Instruction *, int *, int);
 void printList(List);
 int addExtern(char *);
+int whatInstruction(char *);
