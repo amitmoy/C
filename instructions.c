@@ -1,6 +1,6 @@
 #include "types.h"
 enum readingStatus {pre, read, post, minus, backslash};
-enum readOperandStatus {pre, prenum, num, readlabel, reg, post, prereg, regread, postreg};
+enum readOperandStatus {preop, prenum, num, readlabel, reg, postop, prereg, regread, postreg};
 extern char *directiveList[];
 extern char label[];
 extern char *instructionList[];
@@ -273,14 +273,14 @@ int whatInstruction(char *str){
 }
 
 
-int readOperand(char *str, int *method, instruction *value){
-	enum readOperandStatus satatus = pre;
-	char *val[LINE_LENGTH] = {0};
+int readOperand(char *str, int *method, int *value){
+	enum readOperandStatus status = pre;
+	char val[LINE_LENGTH] = {0};
 	int i=0,k=0;
 	enum Boolean nonDirect = f;
 	while(1){
 		switch(status){
-			case pre:
+			case preop:
 				if(str[i] == ' ' || str[i] == '\t'){
 					i++;
 				} else if(str[i] == '#'){
@@ -318,13 +318,13 @@ int readOperand(char *str, int *method, instruction *value){
 					if(str[i-1] == '-') return wrongOperand;
 					i++;
 					val[k] = '\0';
-					value->bits = atoi(val);
+					*value = atoi(val);
 					*method = imm;
-					state = post;
+					status = postop;
 				} else if(str[i] == '\0'){
 					if(str[i-1] == '-') return wrongOperand;
 					val[k] = '\0';
-					value->bits = atoi(val);
+					*value = atoi(val);
 					*method = imm;
 					return none;
 				}else{
@@ -334,24 +334,24 @@ int readOperand(char *str, int *method, instruction *value){
 			case prereg:
 				if(str[i] == 'r'){
 					val[k++] = str[i++];
-					state = regread;
+					status = regread;
 				} else {
 					return wrongOperand;
 				}
 				break;
 			case regread:
 				if(isdigit(str[i]) && (str[i]-'0')>=0 && (str[i]-'0')<=7){
-					value->bits = str[i] - '0';
+					*value = str[i] - '0';
 					if(nonDirect == t){
 						*method = nonDirectReg;
 					} else {
 						*method = directReg;
 					}
 					val[k++] = str[i++];
-					state = postreg;
+					status = postreg;
 				}else if(nonDirect==f && (isalpha(str[i]) || isdigit(str[i]))){
 					val[k++] = str[i++];
-					state = readlabel;
+					status = readlabel;
 				} else if(str[i]=='\0') {
 					if(nonDirect == t){
 						return wrongOperand;
@@ -363,7 +363,7 @@ int readOperand(char *str, int *method, instruction *value){
 					return wrongOperand;
 				}
 				break;
-			case post:
+			case postop:
 				if(str[i] == '\0'){
 					return none;
 				} else if(str[i] == '\t' || str[i] == ' ') {
@@ -371,4 +371,34 @@ int readOperand(char *str, int *method, instruction *value){
 				} else {
 					return wrongOperand;
 				}
-
+				break;
+			case readlabel:
+				if(str[i] == ' ' || str[i] == '\t'){
+					i++;
+					status = postop;
+					*method = direct;
+				} else if(str[i] == '\0') {
+ 					*method = direct;
+					return none;
+				} else if(isdigit(str[i]) || isalpha(str[i])){
+					val[k++] = str[i++];
+				} else {
+				}
+				break;
+			case postreg:
+				if(str[i] == ' ' || str[i] == '\t'){
+					i++;
+					status = postop;
+				} else if(nonDirect==f && (isalpha(str[i]) || isdigit(str[i]))){
+					val[k++] = str[i++];
+					status = readlabel;
+				} else if(str[i] == '\0') {
+					return none;
+				} else {
+					return wrongOperand;
+				}
+		}
+	}
+	return -1;
+}
+			

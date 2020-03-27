@@ -9,12 +9,13 @@ List labelTable;
 char label[LINE_LENGTH];
 enum Boolean labelFlag;
 enum errors errorFlag;
+int firstMethod, secondMethod, firstVal, secondVal;
 
 
 int main(int argc, char **argv){
 	FILE *fd;
 	char buffer[LINE_LENGTH] = {0};
-	int i,ch,k=0;
+	int i,ch,k=0,j;
 	int drctv = -1;
 	int instruction;
 	
@@ -35,6 +36,7 @@ int main(int argc, char **argv){
 		i = 0;
 		l = 1;
 		k = 0;
+		j = 0;
 		
 		/*-----Reads the line to the buffer-----*/
 		while((ch = fgetc(fd))!=EOF && ch!='\n'){
@@ -102,9 +104,18 @@ int main(int argc, char **argv){
 		} else {
 			code[ic++].bits = instruction<<11;
 			while(buffer[k] == ' ' || buffer[k] == '\t') k++;
-			k = k + strlen(instructions[instruction]);
+			k = k + strlen(instructionList[instruction]);
 			if(instruction>=0 && instruction<=4){
-				/*two opperands*/
+				j=k;
+				while(buffer[j] != ',' && buffer[j]!='\0') k++;
+				if(buffer[j] == '\0'){
+					/*error no operands*/
+				} else {
+					buffer[j] = '\0';
+					readOperand(buffer+k, &firstMethod, &firstVal);
+					readOperand(buffer+j, &secondMethod, &secondVal);
+					printf("\n1stme: %d, 2ndme: %d, 1stval: %d, 2ndval: %d\n", firstMethod, secondMethod, firstVal, secondVal);
+				}
 			}else if(instruction>=5 && instruction<=13){
 				/*one opperand*/
 			}else{

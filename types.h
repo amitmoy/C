@@ -39,3 +39,4 @@ int addData(char *, Instruction *, int *, int);
 void printList(List);
 int addExtern(char *);
 int whatInstruction(char *);
+int readOperand(char *, int *, int *);
