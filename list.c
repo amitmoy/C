@@ -49,4 +49,16 @@ void printList(List list){
 	}
 }	 
 
-	
+void printCode(Instruction toPrint){
+	unsigned mask = 1<<14;
+	int i;
+	for(i=0; i<15; i++){
+		if(toPrint.bits & (mask)){
+			putchar('1');
+		} else {
+			putchar('0');
+		}
+		mask = mask >> 1;
+	}
+	putchar('\n');
+}

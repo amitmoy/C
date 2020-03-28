@@ -2,13 +2,8 @@ bbbb: .data 7,8,9
 adad: .data 7  ,   -98	,	9
 TEST:   .string "abc"    
 .data 7,8,9
-b: .string "a\d\""
-.extern hello
-	.extern     hi   
-add ssfef
-cmp  
-mov 
-	sub
-      lea   
-clr asda
-	 clr asda
+cmp r1,r2
+add #-1,#1990
+	add 	#+23, 	 r4 
+
+

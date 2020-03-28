@@ -18,6 +18,7 @@ int main(int argc, char **argv){
 	int i,ch,k=0,j;
 	int drctv = -1;
 	int instruction;
+	int mask = 1;
 	
 	/*No files error*/
 	if(argc == 1){
@@ -33,6 +34,7 @@ int main(int argc, char **argv){
 	
 	/*------------First Read-----------*/
 	while(!feof(fd)){
+		int check;
 		i = 0;
 		l = 1;
 		k = 0;
@@ -78,7 +80,6 @@ int main(int argc, char **argv){
 			}
 		}
 
-		printf("\ndrctv = %d, %s", drctv, buffer);
 		/*checks if .entry or .extern, if entry continue, if external adds the label*/
 		if(drctv==lentry){
 			if(labelFlag)
@@ -98,23 +99,48 @@ int main(int argc, char **argv){
 			addNode(&labelTable, label, ic+100, drctv);
 			while(buffer[k++]!=':');
 		}
-
+		
 		if((instruction = whatInstruction(buffer+k))==-1){
 			/*--------error-------*/
 		} else {
-			code[ic++].bits = instruction<<11;
+			
+			code[ic].bits = instruction<<11;
 			while(buffer[k] == ' ' || buffer[k] == '\t') k++;
 			k = k + strlen(instructionList[instruction]);
 			if(instruction>=0 && instruction<=4){
 				j=k;
-				while(buffer[j] != ',' && buffer[j]!='\0') k++;
+				l=2;
+				printf("\n%s\n",buffer);
+				while(buffer[j] != ',' && buffer[j]!='\0') j++;
+				
 				if(buffer[j] == '\0'){
 					/*error no operands*/
 				} else {
-					buffer[j] = '\0';
+					buffer[j++] = '\0';
 					readOperand(buffer+k, &firstMethod, &firstVal);
 					readOperand(buffer+j, &secondMethod, &secondVal);
-					printf("\n1stme: %d, 2ndme: %d, 1stval: %d, 2ndval: %d\n", firstMethod, secondMethod, firstVal, secondVal);
+					code[ic].bits |= (1<<firstMethod)<<7;
+					code[ic].bits |= (1<<secondMethod)<<3;
+					printCode(code[ic]);
+					if(firstMethod >1 && secondMethod > 1){
+						l=1;
+						code[ic+1].bits = firstVal<<7;
+						code[ic+1].bits |= secondVal<<3;
+						printCode(code[ic+1]);
+					}else{
+						l=2;
+						if(firstMethod == imm){
+							code[ic+1].bits = firstVal;
+						} else if(firstMethod != direct){
+							code[ic+1].bits = firstVal<<7;
+						} 
+
+						if(secondMethod == imm){
+							code[ic+2].bits = secondtVal;
+						} else if(secondMethod != direct){
+							code[ic+2].bits = secondVal<<7;
+						}
+					}
 				}
 			}else if(instruction>=5 && instruction<=13){
 				/*one opperand*/

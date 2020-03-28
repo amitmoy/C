@@ -40,3 +40,4 @@ void printList(List);
 int addExtern(char *);
 int whatInstruction(char *);
 int readOperand(char *, int *, int *);
+void printCode(Instruction);
