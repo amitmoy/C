@@ -6,6 +6,7 @@
 #define MEM_SIZE 4096
 #define DATA_SIZE 1024
 #define LINE_LENGTH 80
+#define LABEL_LENGTH 30
 
 enum directives {lstring=0,ldata,lextern,lentry,lcode};
 
@@ -41,3 +42,4 @@ int addExtern(char *);
 int whatInstruction(char *);
 int readOperand(char *, int *, int *);
 void printCode(Instruction);
+Node * searchNode(List , char *);

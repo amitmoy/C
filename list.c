@@ -49,6 +49,15 @@ void printList(List list){
 	}
 }	 
 
+Node * searchNode(List list, char *label){
+	Node *ptr = list.head;
+	while(ptr){
+		if(!strcmp(ptr->name, label)) return ptr;
+		ptr = ptr->next;
+	}
+	return NULL;
+}
+
 void printCode(Instruction toPrint){
 	unsigned mask = 1<<14;
 	int i;

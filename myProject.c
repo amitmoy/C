@@ -3,7 +3,7 @@
 int ic = 0, dc = 0, l, firstMethod, secondMethod;
 Instruction code[MEM_SIZE-DATA_SIZE];
 Instruction data[DATA_SIZE];
-char *instructionList[]={"mov ","cmp ","add ","sub ","lea ","clr ","not ","inc ","dec ","jmp ","bne ","red ","prn ","jsr ","rts ","stop "};
+char *instructionList[]={"mov ","cmp ","add ","sub ","lea ","clr ","not ","inc ","dec ","jmp ","bne ","red ","prn ","jsr ","rts","stop"};
 char *directiveList[]={".string ",".data ",".extern ",".entry "};
 List labelTable;
 char label[LINE_LENGTH];
@@ -28,7 +28,7 @@ int main(int argc, char **argv){
 	
 	/*Open File*/
 	if(!(fd = fopen(*(argv+1),"r"))){
-		printf("File load was failed\n");
+		printf("File %s load was failed\n", argv+1);
 		exit(0);
 	}
 	
@@ -36,7 +36,7 @@ int main(int argc, char **argv){
 	while(!feof(fd)){
 		int check;
 		i = 0;
-		l = 1;
+		l = 0;
 		k = 0;
 		j = 0;
 		
@@ -64,7 +64,7 @@ int main(int argc, char **argv){
 			while(buffer[k++]!=':');
 			
 			if((drctv = isDirective(buffer+k))==lstring || drctv==ldata){
-				addNode(&labelTable, label, dc, drctv);
+				addNode(&labelTable, label, ic+100, drctv);
 				while(buffer[k]!='.') k++;
 				k = k + strlen(directiveList[drctv]);
 				addData((buffer+k), data, &dc, drctv);
@@ -187,13 +187,69 @@ int main(int argc, char **argv){
 				if(secondMethod != direct){
 					code[ic+1].bits = secondVal<<3;
 				} 
+				/*A flag*/
 				code[ic+1].bits |= 1<<2;
 			}else{
-				/*no opperands*/
+				while(buffer[k] == '\t' || buffer == ' ') k++;
+				if(buffer[k]!='\0'){
+					errorFlag++;
+					printf("\nNo operrands allowed on : %s", buffer);
+					continue;
+				}
+				code[ic].bits |= 1<<2;	
 			}
+			
+		}
+		ic = ic+l+1;
+		if(ic>=MEM_SIZE-DATA_SIZE){
+			printf("\nMemory overflow error");
+			exit(0);
 		}	
-
 	}
-	while(ic--) printf("\n%d is : %u\n",ic,code[ic].bits);
+	
+	
+	/*-----Prepare for second read------*/
+	if(errorFlag){
+		printf("\nCompile Errors detected");
+		exit(0);
+	}
+
+	rewind(fd);
+
+	while(!feof(fd)){
+		k=0;
+		/*reading line to the buffer*/
+		while((ch = fgetc(fd))!=EOF && ch!='\n'){
+			if(i<LINE_LENGTH){
+				buffer[i++] = ch;
+			}else{
+				printf("Line length overflow");
+				break;
+			}
+		}
+		
+		buffer[i]='\0';
+		
+		/*cheacks if there is label*/
+		if(isLabel(buffer)){
+			labelFlag = t;
+			while(buffer[k++]!=':');
+		}else{
+			labelFlag = f;
+		}
+
+		if((drctv = isDirective(buffer+k))==lstring || drctv==ldata || drctv== lextern){
+			continue;
+		} else if(drctv!=-1) {
+			if(!addEntry(buffer+k)){
+				errorFlag++;
+				printf("\nNo such label on : %s", buffer);
+				continue;
+			}
+			
+		}
+		
+	}
+	
 	return 0;
 }

@@ -1,6 +1,7 @@
 #include "types.h"
 enum readingStatus {pre, read, post, minus, backslash};
 enum readOperandStatus {preop, prenum, num, readlabel, reg, postop, prereg, regread, postreg};
+enum labelReadStatus {prel, readl, postl};
 extern char *directiveList[];
 extern char label[];
 extern char *instructionList[];
@@ -401,4 +402,16 @@ int readOperand(char *str, int *method, int *value){
 	}
 	return -1;
 }
-			
+
+int addEntry(char *str, List list){
+	int i=0;
+	char *name[LABEL_LENGTH];
+	char ch;
+	enum labelReadStatus status = prel;
+	while(buffer[i]!= '.') i++;
+	i=i+strlen(".extern ");
+	while(1){
+		switch(status){
+			case prel:
+				if(ch!=' ' && ch!='\t'){
+					
