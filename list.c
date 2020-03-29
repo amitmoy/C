@@ -49,8 +49,8 @@ void printList(List list){
 	}
 }	 
 
-Node * searchNode(List list, char *label){
-	Node *ptr = list.head;
+Node * searchNode(List *list, char *label){
+	Node *ptr = list->head;
 	while(ptr){
 		if(!strcmp(ptr->name, label)) return ptr;
 		ptr = ptr->next;

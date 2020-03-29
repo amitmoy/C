@@ -1,6 +1,6 @@
 #include "types.h"
 
-int ic = 0, dc = 0, l, firstMethod, secondMethod;
+int ic = 0, dc = 0, l, firstMethod, secondMethod, secondIc;
 Instruction code[MEM_SIZE-DATA_SIZE];
 Instruction data[DATA_SIZE];
 char *instructionList[]={"mov ","cmp ","add ","sub ","lea ","clr ","not ","inc ","dec ","jmp ","bne ","red ","prn ","jsr ","rts","stop"};
@@ -13,33 +13,33 @@ int firstMethod, secondMethod, firstVal, secondVal;
 
 
 int main(int argc, char **argv){
-	FILE *fd;
-	char buffer[LINE_LENGTH] = {0};
+	FILE *fd,*fdw;
+	char buffer[LINE_LENGTH] = {0}, filename[20]={0};
 	int i,ch,k=0,j;
 	int drctv = -1;
 	int instruction;
-	int mask = 1;
+	int pointer = 0;
 	
 	/*No files error*/
 	if(argc == 1){
 		printf("No files entered\n");
 		exit(0);
 	}
+	strcpy(filename,*(argv+1));
 	
 	/*Open File*/
 	if(!(fd = fopen(*(argv+1),"r"))){
-		printf("File %s load was failed\n", argv+1);
+		printf("File %s load was failed\n", *(argv+1));
 		exit(0);
 	}
 	
+	strcpy(filename,*(argv+1));
 	/*------------First Read-----------*/
 	while(!feof(fd)){
-		int check;
 		i = 0;
 		l = 0;
 		k = 0;
 		j = 0;
-		
 		/*-----Reads the line to the buffer-----*/
 		while((ch = fgetc(fd))!=EOF && ch!='\n'){
 			if(i<LINE_LENGTH){
@@ -49,7 +49,10 @@ int main(int argc, char **argv){
 				break;
 			}
 		}
-		
+		if(buffer[0] == '\n'){
+			continue;
+		}
+
 		buffer[i]='\0';
 
 		/*-----label check-----*/
@@ -67,7 +70,7 @@ int main(int argc, char **argv){
 				addNode(&labelTable, label, ic+100, drctv);
 				while(buffer[k]!='.') k++;
 				k = k + strlen(directiveList[drctv]);
-				addData((buffer+k), data, &dc, drctv);
+				addData((buffer+k), data, code, &dc, &ic, drctv);
 				continue;
 			}
 		} else {
@@ -75,7 +78,7 @@ int main(int argc, char **argv){
 			if(drctv == lstring || drctv == ldata){
 				while(buffer[k]!='.') k++;
 				k = k + strlen(directiveList[drctv]);
-				addData((buffer+k), data, &dc, drctv);
+				addData((buffer+k), data, code, &dc, &ic, drctv);
 				continue;
 			}
 		}
@@ -190,7 +193,7 @@ int main(int argc, char **argv){
 				/*A flag*/
 				code[ic+1].bits |= 1<<2;
 			}else{
-				while(buffer[k] == '\t' || buffer == ' ') k++;
+				while(buffer[k] == '\t' || buffer[k] == ' ') k++;
 				if(buffer[k]!='\0'){
 					errorFlag++;
 					printf("\nNo operrands allowed on : %s", buffer);
@@ -198,26 +201,33 @@ int main(int argc, char **argv){
 				}
 				code[ic].bits |= 1<<2;	
 			}
+			ic+=l+1;
 			
 		}
-		ic = ic+l+1;
 		if(ic>=MEM_SIZE-DATA_SIZE){
 			printf("\nMemory overflow error");
 			exit(0);
 		}	
 	}
 	
-	
 	/*-----Prepare for second read------*/
 	if(errorFlag){
 		printf("\nCompile Errors detected");
 		exit(0);
 	}
-
+	
 	rewind(fd);
-
+	printList(labelTable);
+	secondIc = 0;
 	while(!feof(fd)){
+		int instruction;
+		char label[LABEL_LENGTH];
+		l=0;
 		k=0;
+		i=0;
+		int j = 0;
+		Node *node;
+
 		/*reading line to the buffer*/
 		while((ch = fgetc(fd))!=EOF && ch!='\n'){
 			if(i<LINE_LENGTH){
@@ -229,27 +239,97 @@ int main(int argc, char **argv){
 		}
 		
 		buffer[i]='\0';
-		
-		/*cheacks if there is label*/
-		if(isLabel(buffer)){
+					
+		/*checks if there is label*/
+		if(isLabel(buffer)){	
 			labelFlag = t;
 			while(buffer[k++]!=':');
 		}else{
 			labelFlag = f;
 		}
-
-		if((drctv = isDirective(buffer+k))==lstring || drctv==ldata || drctv== lextern){
+		
+		if((drctv = isDirective(buffer+k))==lstring || drctv==ldata){
+			l=sizeOfCode(buffer+k, drctv);
+			secondIc+=l;
 			continue;
 		} else if(drctv!=-1) {
-			if(!addEntry(buffer+k)){
+			if(addEntry(buffer+k, &labelTable)){
 				errorFlag++;
 				printf("\nNo such label on : %s", buffer);
 				continue;
 			}
-			
 		}
-		
+
+		if((instruction = whatInstruction(buffer+k))==-1){
+			/*--------error-------*/
+		} else{
+			if(instruction>=0 && instruction<=4){
+				while(buffer[k] == ' ' || buffer[k] == '\t') k++;
+				k = k + strlen(instructionList[instruction]);
+				j=k;
+				while(buffer[j]!=',') j++;
+				buffer[j]='\0';
+				readOperand(buffer+k, &firstMethod, &firstVal);
+				readOperand(buffer+j+1, &secondMethod, &secondVal);
+				if(firstMethod == direct){
+					j=0;
+					while(buffer[k] == ' ' || buffer[k] == '\t') k++;
+					while(buffer[k]!=',' && buffer[k]!=' ' && buffer[k]!='\t') label[j++] = buffer[k++];
+					label[j]='\0';
+					if((node=searchNode(&labelTable,label))){
+						code[secondIc+1].bits = node->value;
+					} else {
+						printf("No such label %s", label);
+						errorFlag++;
+					}
+				}
+				j=0;
+				if(secondMethod == direct){
+					while(buffer[k++]!=',');
+					while(buffer[k] == ' ' || buffer[k] == '\t') k++;
+					while(buffer[k]!='\0' && buffer[k]!=' ' && buffer[k]!='\t') label[j++] = buffer[k++];
+					label[j]='\0';
+					if((node=searchNode(&labelTable,label))){
+						code[secondIc+2].bits = node->value;
+					} else {
+						printf("No such label in 2nd operrand of: %s",buffer);
+						errorFlag++;
+					}
+				}
+				if(firstMethod > 1 && secondMethod > 1){
+					l=2;
+				} else {
+					l=3;
+				}
+			} else if(instruction<=13){
+				while(buffer[k] == ' ' || buffer[k] == '\t') k++;
+				k = k + strlen(instructionList[instruction]);
+				readOperand(buffer+k, &firstMethod, &firstVal);
+				if(firstMethod == direct){
+					while(buffer[k] == ' ' || buffer[k] == '\t') k++;
+					while(buffer[k]!='\0' && buffer[k]!=' ' && buffer[k]!='\t') label[j++] = buffer[k++];
+					label[j]='\0';
+					if(!(node=searchNode(&labelTable,label))){
+						code[secondIc+1].bits = node->value;
+					} else {
+						printf("No such label in: %s",buffer);
+						errorFlag++;
+					}
+				}
+				l=2;
+			} else{
+				l=1;
+			}
+			secondIc+=l;	
+		}				
 	}
-	
+
+	if(errorFlag){
+		printf("\nCompiling error detected");
+		exit(0);
+	}
+	str
+	fopen
+	while(pointer<secondIc){
 	return 0;
 }

@@ -10,7 +10,7 @@
 
 enum directives {lstring=0,ldata,lextern,lentry,lcode};
 
-enum errors {none=0,collisionError,wrongLabel,wrongData,numberOverflow,wrongOperand};
+enum errors {none=0,collisionError,wrongLabel,wrongData,numberOverflow,wrongOperand,wrongEntry,unknownEntry};
 enum instruction {mov=0,cmp,add,sub,lea,clr,inot,inc,dec,jmp,bne,red,prn,jsr,rts,stop};
 
 enum addressingMethods {imm=0, direct, nonDirectReg, directReg};
@@ -36,10 +36,12 @@ typedef struct{
 int addNode(List *, char *, int, int);
 int isLabel(char *);
 int isDirective(char *);
-int addData(char *, Instruction *, int *, int);
+int addData(char *, Instruction *, Instruction *, int *, int *, int);
 void printList(List);
 int addExtern(char *);
 int whatInstruction(char *);
 int readOperand(char *, int *, int *);
 void printCode(Instruction);
-Node * searchNode(List , char *);
+Node * searchNode(List *, char *);
+int addEntry(char *, List *);
+int sizeOfCode(char *, int );

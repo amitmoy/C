@@ -49,9 +49,9 @@ int isDirective(char *str){
 }
 
 /*this function gets the line, the data array, data counter and the directive and adds the data to data array*/
-int addData(char *str, Instruction *data, int *DC, int drctv){
+int addData(char *str, Instruction *data, Instruction *code, int *DC, int *IC, int drctv){
 	char num[LINE_LENGTH-5] = {0};
-	int k=0,i=0,val,origindc = *DC;
+	int k=0,i=0,val,origindc = *DC,originic= *IC;
 	enum readingStatus status = pre;
 	if(drctv == ldata){
 		while(1){
@@ -81,7 +81,9 @@ int addData(char *str, Instruction *data, int *DC, int drctv){
 					} else if(str[i] == ' ' || str[i] == '\t'){
 						if((val = atoi(num))<32767 && val> -32768){
 							data[*DC].bits = val;
+							code[*IC].bits = val;
 							*DC = *DC + 1;
+							*IC = *IC + 1;
 							memset(num, 0, k * sizeof (int));
 							k = 0;
 						} else {
@@ -93,7 +95,9 @@ int addData(char *str, Instruction *data, int *DC, int drctv){
 					} else if(str[i] == ',') {
 						if((val = atoi(num))<32767 && val> -32768){
 							data[*DC].bits = val;
+							code[*IC].bits = val;
 							*DC = *DC + 1;
+							*IC = *IC + 1;
 							memset(num, 0, k * sizeof (int));
 							k = 0;
 						} else {
@@ -105,16 +109,20 @@ int addData(char *str, Instruction *data, int *DC, int drctv){
 					} else if(str[i] == '\0') {
 						if((val = atoi(num))<32767 && val> -32768){
 							data[*DC].bits = val;
+							code[*IC].bits = val;
 							*DC = *DC + 1;
+							*IC = *IC + 1;
 							memset(num, 0, k * sizeof (int));
 							k = 0;
 						} else {
 							*DC = origindc;
+							*IC = originic;
 							return numberOverflow;
 						} 
 						return none;
 					} else {
 						*DC = origindc;
+						*IC = originic;
 						return wrongData;
 					}
 					break;
@@ -127,6 +135,7 @@ int addData(char *str, Instruction *data, int *DC, int drctv){
 						i++;
 					} else {
 						*DC = origindc;
+						*IC = originic;
 						return wrongData;
 					}
 					break;
@@ -134,6 +143,7 @@ int addData(char *str, Instruction *data, int *DC, int drctv){
 				case minus:
 					if(!(isdigit(str[i]))){
 						*DC = origindc;
+						*IC = originic;
 						return wrongData;
 					} else {
 						num[k++] = str[i++];
@@ -154,6 +164,7 @@ int addData(char *str, Instruction *data, int *DC, int drctv){
 						i++;
 					} else {
 						*DC = origindc;
+						*IC = originic;
 						return wrongData;
 					}
 					break;
@@ -165,11 +176,15 @@ int addData(char *str, Instruction *data, int *DC, int drctv){
 					} else if(str[i] == '"'){
 						data[*DC].bits = '\0';
 						*DC = *DC + 1;
+						code[*IC].bits = '\0';
+						*IC = *IC + 1;
 						status = post;
 						i++;
 					} else {
 						data[*DC].bits = str[i];
 						*DC = *DC + 1;
+						code[*IC].bits = str[i];
+						*IC = *IC + 1;
 						i++;
 					}
 					break;
@@ -181,6 +196,7 @@ int addData(char *str, Instruction *data, int *DC, int drctv){
 						return none;
 					} else {
 						*DC = origindc;
+						*IC = originic;
 						return wrongData;
 					}
 					break;
@@ -189,11 +205,15 @@ int addData(char *str, Instruction *data, int *DC, int drctv){
 					if(str[i] == '"'){
 						data[*DC].bits = str[i];
 						*DC = *DC + 1;
+						code[*IC].bits = str[i];
+						*IC = *IC + 1;
 						status = read;
 						i++;
 					} else if(str[i] == '\\') { 
 						data[*DC].bits = '\\';
 						*DC = *DC + 1;
+						code[*IC].bits = '\\';
+						*IC = *IC + 1;
 						status = read;
 						i++;
 					} else {
@@ -201,6 +221,10 @@ int addData(char *str, Instruction *data, int *DC, int drctv){
 						*DC = *DC + 1;
 						data[*DC].bits = str[i];
 						*DC = *DC + 1;
+						code[*IC].bits = '\\';
+						*IC = *IC + 1;
+						code[*IC].bits = str[i];
+						*IC = *IC + 1;
 						status = read;
 						i++;
 					}
@@ -403,15 +427,99 @@ int readOperand(char *str, int *method, int *value){
 	return -1;
 }
 
-int addEntry(char *str, List list){
-	int i=0;
-	char *name[LABEL_LENGTH];
+int addEntry(char *str, List *list){
+	int i=0,k=0;
+	char name[LABEL_LENGTH];
 	char ch;
+	Node *node;
 	enum labelReadStatus status = prel;
-	while(buffer[i]!= '.') i++;
-	i=i+strlen(".extern ");
+	while(str[i]!= '.') i++;
+	i=i+strlen(".extern");
 	while(1){
 		switch(status){
 			case prel:
-				if(ch!=' ' && ch!='\t'){
-					
+				if(str[i] == ' ' || str[i] == '\t'){
+					i++;
+				} else if(isalpha(str[i])){
+					name[k++] = str[i++];
+					status = readl;
+				} else {
+					return wrongEntry;
+				}
+				break;
+			case readl:
+				if(isalpha(str[i]) || isdigit(str[i])){
+					name[k++] = str[i++];
+				} else if(str[i] == ' ' || str[i] == '\t'){
+					name[k++] = str[i++];
+					name[k] = '\0';
+					k=0;
+					node = searchNode(list, name);
+					if(!node){
+						return unknownEntry;
+					}
+					node->ltype = lentry;
+					status = postl;
+				} else if(str[i] == '\0'){
+					name[k] = '\0';
+					node = searchNode(list, name);
+					if(node){
+						node->ltype = lentry;
+						return none;
+					}else{
+						return unknownEntry;
+					}
+				} else if(str[i] == ','){
+					name[k] = '\0';
+					k=0;
+					node = searchNode(list, name);
+					if(!node){
+						return unknownEntry;
+					}
+					node->ltype = lentry;
+					status = postl;
+					i++;
+				} else{
+					return wrongEntry;
+				}
+				break;
+			case postl:
+				if(str[i] == ' ' || str[i] == '\t'){
+					i++;
+				} else if(isalpha(str[i])){
+					k=0;
+					name[k++] = str[i++];
+					status = readl;
+				} else if(str[i] == '\0'){
+					return none;
+				} else{
+					return wrongEntry;
+				}
+		}
+	}
+	return wrongEntry;
+}	 
+	
+int sizeOfCode(char *str, int drctv){
+	int i=0, counter=0;
+	if(drctv == ldata){
+		counter=1;
+		while(str[i]!='\0'){
+			if(str[i] == ',') counter++;
+			i++;
+		}
+		return counter;
+	} else {
+		while(str[i++]!='"');
+		while(!(str[i]=='"' && str[i-1]!='\\')){
+			if((str[i]=='"' && str[i-1]=='\\') || (str[i] =='\\' && str[i-1] =='\\')){
+				counter--;
+			}
+			i++;
+			counter++;
+		}
+		return counter+1;
+	}
+	return 0;
+}
+		
