@@ -8,7 +8,7 @@ char *directiveList[]={".string ",".data ",".extern ",".entry "};
 List labelTable;
 char label[LINE_LENGTH];
 enum Boolean labelFlag;
-enum errors errorFlag;
+int errorFlag;
 int firstMethod, secondMethod, firstVal, secondVal;
 
 
@@ -117,33 +117,77 @@ int main(int argc, char **argv){
 					/*error no operands*/
 				} else {
 					buffer[j++] = '\0';
-					readOperand(buffer+k, &firstMethod, &firstVal);
-					readOperand(buffer+j, &secondMethod, &secondVal);
-					code[ic].bits |= (1<<firstMethod)<<7;
-					code[ic].bits |= (1<<secondMethod)<<3;
+
+					/*-------Adrressing errors--------*/
+					if(readOperand(buffer+k, &firstMethod, &firstVal) || readOperand(buffer+j, &secondMethod, &secondVal)){
+						printf("\nWrong Operands on : %s", buffer);
+						errorFlag++;
+						continue;
+					}
+					if((secondMethod == imm && instruction != 1) || (firstMethod!=1 && instruction == 4)){
+						printf("\nInvalid addressing method on : %s", buffer);
+						errorFlag++;
+						continue;
+					}
+
+					code[ic].bits |= (1<<firstMethod)<<7;  /*build the first info word*/
+					code[ic].bits |= (1<<secondMethod)<<3;  /*-----------------------*/
+					code[ic].bits |= 1<<2;			/*-------------------------*/
+
 					printCode(code[ic]);
+
 					if(firstMethod >1 && secondMethod > 1){
 						l=1;
 						code[ic+1].bits = firstVal<<7;
 						code[ic+1].bits |= secondVal<<3;
+						/*A flag*/
+						code[ic+1].bits |= 1<<2;
+
 						printCode(code[ic+1]);
+
 					}else{
 						l=2;
 						if(firstMethod == imm){
-							code[ic+1].bits = firstVal;
+							code[ic+1].bits = firstVal<<3;
 						} else if(firstMethod != direct){
 							code[ic+1].bits = firstVal<<7;
 						} 
 
 						if(secondMethod == imm){
-							code[ic+2].bits = secondtVal;
+							code[ic+2].bits = secondVal<<3;
 						} else if(secondMethod != direct){
-							code[ic+2].bits = secondVal<<7;
+							code[ic+2].bits = secondVal<<3;
 						}
+						/*A flag*/
+						code[ic+1].bits |= 1<<2;
+						code[ic+2].bits |= 1<<2;
+
+						printCode(code[ic+1]);
+						printCode(code[ic+2]);
 					}
+					
 				}
 			}else if(instruction>=5 && instruction<=13){
-				/*one opperand*/
+				/*------------Addressing methods error------------*/
+				if(readOperand(buffer+k, &secondMethod, &secondVal)){
+					printf("\nWrong Operand on : %s", buffer);
+					errorFlag++;
+					continue;
+				}
+				if((secondMethod == 0 && instruction != 12) || (secondMethod == 3 && (instruction==9||instruction==10||instruction==13))){
+					printf("\nInvalid addressing method on : %s", buffer);
+					errorFlag++;
+					continue;
+				}
+
+				l=1;
+				code[ic].bits |= (1<<secondMethod)<<3;
+				/*A flag*/
+				code[ic].bits |= 1<<2;
+				if(secondMethod != direct){
+					code[ic+1].bits = secondVal<<3;
+				} 
+				code[ic+1].bits |= 1<<2;
 			}else{
 				/*no opperands*/
 			}
