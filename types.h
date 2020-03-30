@@ -36,7 +36,7 @@ typedef struct{
 int addNode(List *, char *, int, int);
 int isLabel(char *);
 int isDirective(char *);
-int addData(char *, Instruction *, Instruction *, int *, int *, int);
+int addData(char *, Instruction *, int *, int);
 void printList(List);
 int addExtern(char *);
 int whatInstruction(char *);
@@ -44,4 +44,5 @@ int readOperand(char *, int *, int *);
 void printCode(Instruction);
 Node * searchNode(List *, char *);
 int addEntry(char *, List *);
-int sizeOfCode(char *, int );
+void addVal(List *, int );
+void binToOc(Instruction, char *);

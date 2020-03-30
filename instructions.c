@@ -1,7 +1,9 @@
 #include "types.h"
-enum readingStatus {pre, read, post, minus, backslash};
-enum readOperandStatus {preop, prenum, num, readlabel, reg, postop, prereg, regread, postreg};
+enum readStringStatus {pre, read, post, backslash};
+enum readDataStatus {pred,readd,postd,minusd};
+enum readOperandStatus {preop, prenum, num, readlabel, postop, prereg, regread, postreg};
 enum labelReadStatus {prel, readl, postl};
+enum readExternStatus {pree, reade, poste};
 extern char *directiveList[];
 extern char label[];
 extern char *instructionList[];
@@ -49,23 +51,23 @@ int isDirective(char *str){
 }
 
 /*this function gets the line, the data array, data counter and the directive and adds the data to data array*/
-int addData(char *str, Instruction *data, Instruction *code, int *DC, int *IC, int drctv){
+int addData(char *str, Instruction *data, int *DC, int drctv){
 	char num[LINE_LENGTH-5] = {0};
-	int k=0,i=0,val,origindc = *DC,originic= *IC;
-	enum readingStatus status = pre;
+	int k=0,i=0,val,origindc = *DC;
 	if(drctv == ldata){
-		while(1){
+		enum readDataStatus status = pred;
+		while(1){	
 			/*reading chars and decide what to do with each state*/
 			switch(status){
 				/*ready to start read numbers meanwhile can read whitechars*/
 				/*if digit was readed then store it and state become read, if read minus state become minus and store it aswell*/
-				case pre:
+				case pred:
 					if(isdigit(str[i])){
 						num[k++] = str[i++];
-						status = read;
+						status = readd;
 					} else if(str[i]=='-') {	
 						num[k++] = str[i++];
-						status = minus;
+						status = minusd;
 					} else if(str[i]==' ' || str[i]=='\t'){
 						i++;
 					} else {
@@ -75,84 +77,75 @@ int addData(char *str, Instruction *data, Instruction *code, int *DC, int *IC, i
 					break;
 				/*reading number state, can read digits and stores it, when white char appear adds the number to data array and state become post*/
 				/*if ',' appear store the number in data array and state become pre, if '/0' then return 0 which means no error*/
-				case read:
+				case readd:
 					if(isdigit(str[i])){
 						num[k++] = str[i++];
 					} else if(str[i] == ' ' || str[i] == '\t'){
 						if((val = atoi(num))<32767 && val> -32768){
 							data[*DC].bits = val;
-							code[*IC].bits = val;
 							*DC = *DC + 1;
-							*IC = *IC + 1;
 							memset(num, 0, k * sizeof (int));
 							k = 0;
 						} else {
 							*DC = origindc;
 							return numberOverflow;
 						} 
-						status = post;
+						status = postd;
 						i++;
 					} else if(str[i] == ',') {
 						if((val = atoi(num))<32767 && val> -32768){
 							data[*DC].bits = val;
-							code[*IC].bits = val;
 							*DC = *DC + 1;
-							*IC = *IC + 1;
 							memset(num, 0, k * sizeof (int));
 							k = 0;
 						} else {
 							*DC = origindc;
 							return numberOverflow;
 						} 
-						status = pre;
+						status = pred;
 						i++;
 					} else if(str[i] == '\0') {
 						if((val = atoi(num))<32767 && val> -32768){
 							data[*DC].bits = val;
-							code[*IC].bits = val;
 							*DC = *DC + 1;
-							*IC = *IC + 1;
 							memset(num, 0, k * sizeof (int));
 							k = 0;
 						} else {
 							*DC = origindc;
-							*IC = originic;
 							return numberOverflow;
 						} 
 						return none;
 					} else {
 						*DC = origindc;
-						*IC = originic;
 						return wrongData;
 					}
 					break;
 				/*post state, can read ',' and then state become pre, otherwise if whitechar keep read*/
-				case post:
+				case postd:
 					if(str[i] == ','){
-						status = pre;
+						status = pred;
 						i++;
 					} else if (str[i] == ' ' || str[i] == '\t') {
 						i++;
 					} else {
 						*DC = origindc;
-						*IC = originic;
 						return wrongData;
 					}
 					break;
 				/*minus state can read only digits*/
-				case minus:
+				case minusd:
 					if(!(isdigit(str[i]))){
 						*DC = origindc;
-						*IC = originic;
 						return wrongData;
 					} else {
 						num[k++] = str[i++];
-						status = read;
+						status = readd;
 					}
 					break;
 			}
 		}
 	} else if(drctv == lstring) {
+		enum readStringStatus status = pre;
 		while(1){
 			switch(status){
 				/*pre status waiting for " to start read the string*/
@@ -164,7 +157,6 @@ int addData(char *str, Instruction *data, Instruction *code, int *DC, int *IC, i
 						i++;
 					} else {
 						*DC = origindc;
-						*IC = originic;
 						return wrongData;
 					}
 					break;
@@ -176,15 +168,11 @@ int addData(char *str, Instruction *data, Instruction *code, int *DC, int *IC, i
 					} else if(str[i] == '"'){
 						data[*DC].bits = '\0';
 						*DC = *DC + 1;
-						code[*IC].bits = '\0';
-						*IC = *IC + 1;
 						status = post;
 						i++;
 					} else {
 						data[*DC].bits = str[i];
 						*DC = *DC + 1;
-						code[*IC].bits = str[i];
-						*IC = *IC + 1;
 						i++;
 					}
 					break;
@@ -196,7 +184,6 @@ int addData(char *str, Instruction *data, Instruction *code, int *DC, int *IC, i
 						return none;
 					} else {
 						*DC = origindc;
-						*IC = originic;
 						return wrongData;
 					}
 					break;
@@ -205,15 +192,11 @@ int addData(char *str, Instruction *data, Instruction *code, int *DC, int *IC, i
 					if(str[i] == '"'){
 						data[*DC].bits = str[i];
 						*DC = *DC + 1;
-						code[*IC].bits = str[i];
-						*IC = *IC + 1;
 						status = read;
 						i++;
 					} else if(str[i] == '\\') { 
 						data[*DC].bits = '\\';
 						*DC = *DC + 1;
-						code[*IC].bits = '\\';
-						*IC = *IC + 1;
 						status = read;
 						i++;
 					} else {
@@ -221,10 +204,6 @@ int addData(char *str, Instruction *data, Instruction *code, int *DC, int *IC, i
 						*DC = *DC + 1;
 						data[*DC].bits = str[i];
 						*DC = *DC + 1;
-						code[*IC].bits = '\\';
-						*IC = *IC + 1;
-						code[*IC].bits = str[i];
-						*IC = *IC + 1;
 						status = read;
 						i++;
 					}
@@ -237,29 +216,29 @@ int addData(char *str, Instruction *data, Instruction *code, int *DC, int *IC, i
 /*adds the extern label*/
 int addExtern(char *str){
 	int i=0,k=0;
-	enum readingStatus status = pre;
+	enum readExternStatus status = pree;
 	char exlabel[LINE_LENGTH] = {0};
 	while(str[i]!='.') i++;
 	i=i + strlen(".extern");
 	printf("addex start %d, ,%s,",i,str+i);
 	while(1){
 		switch(status){
-			case pre:
+			case pree:
 				if(str[i] == ' ' || str[i] == '\t'){
 					i++;
 				} else if(isalpha(str[i]) || isdigit(str[i])){
 					exlabel[k++] = str[i++];
-					status = read;
+					status = reade;
 				} else {
 					return wrongLabel;
 				}
 				break;
-			case read:
+			case reade:
 				if(isalpha(str[i]) || isdigit(str[i])){
 					exlabel[k++] = str[i++];
 				} else if(str[i] == ' ' || str[i] == '\t'){
 					exlabel[k] = '\0';
-					status = post;
+					status = poste;
 					i++;
 				} else if(str[i]=='\0'){
 					exlabel[k] = '\0';
@@ -269,7 +248,7 @@ int addExtern(char *str){
 					return wrongLabel;
 				}
 				break;
-			case post:
+			case poste:
 				if(str[i] == ' ' || str[i] == '\t'){
 					i++;
 				} else if(str[i] == '\0'){
@@ -430,7 +409,6 @@ int readOperand(char *str, int *method, int *value){
 int addEntry(char *str, List *list){
 	int i=0,k=0;
 	char name[LABEL_LENGTH];
-	char ch;
 	Node *node;
 	enum labelReadStatus status = prel;
 	while(str[i]!= '.') i++;
@@ -499,27 +477,18 @@ int addEntry(char *str, List *list){
 	}
 	return wrongEntry;
 }	 
-	
-int sizeOfCode(char *str, int drctv){
-	int i=0, counter=0;
-	if(drctv == ldata){
-		counter=1;
-		while(str[i]!='\0'){
-			if(str[i] == ',') counter++;
-			i++;
+
+void binToOc(Instruction code, char *oc){
+	int i,j, mask=1,num;
+
+	for(i=0;i<5;i++){
+		num=0;
+		mask=1<<(i*3);
+		for(j=0;j<3;j++){
+			num|=mask&code.bits;
+			mask=mask<<1;
 		}
-		return counter;
-	} else {
-		while(str[i++]!='"');
-		while(!(str[i]=='"' && str[i-1]!='\\')){
-			if((str[i]=='"' && str[i-1]=='\\') || (str[i] =='\\' && str[i-1] =='\\')){
-				counter--;
-			}
-			i++;
-			counter++;
-		}
-		return counter+1;
+		num = num >> i*3;
+		oc[4-i]='0'+num;
 	}
-	return 0;
 }
-		

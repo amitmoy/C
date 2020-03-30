@@ -1,6 +1,6 @@
 #include "types.h"
 
-int ic = 0, dc = 0, l, firstMethod, secondMethod, secondIc;
+int  l, firstMethod, secondMethod;
 Instruction code[MEM_SIZE-DATA_SIZE];
 Instruction data[DATA_SIZE];
 char *instructionList[]={"mov ","cmp ","add ","sub ","lea ","clr ","not ","inc ","dec ","jmp ","bne ","red ","prn ","jsr ","rts","stop"};
@@ -13,23 +13,23 @@ int firstMethod, secondMethod, firstVal, secondVal;
 
 
 int main(int argc, char **argv){
-	FILE *fd,*fdw;
-	char buffer[LINE_LENGTH] = {0}, filename[20]={0};
-	int i,ch,k=0,j;
+	FILE *fd;
+	char buffer[LINE_LENGTH] = {0}, filename[20]={0}, writeLine[6] ={0};
+	int i,ch,k=0,j,ic = 0, dc = 0, secondIc=0;
 	int drctv = -1;
-	int instruction;
-	int pointer = 0;
+	int instruction, entryFlag = 1;
 	
+
 	/*No files error*/
 	if(argc == 1){
 		printf("No files entered\n");
 		exit(0);
 	}
 	strcpy(filename,*(argv+1));
-	
+	strcat(filename,".as");
 	/*Open File*/
-	if(!(fd = fopen(*(argv+1),"r"))){
-		printf("File %s load was failed\n", *(argv+1));
+	if(!(fd = fopen(filename,"r"))){
+		printf("\nFile %s load was failed, only .as files can be compiled", *(argv+1));
 		exit(0);
 	}
 	
@@ -67,10 +67,12 @@ int main(int argc, char **argv){
 			while(buffer[k++]!=':');
 			
 			if((drctv = isDirective(buffer+k))==lstring || drctv==ldata){
-				addNode(&labelTable, label, ic+100, drctv);
+				addNode(&labelTable, label, dc, drctv);
 				while(buffer[k]!='.') k++;
 				k = k + strlen(directiveList[drctv]);
-				addData((buffer+k), data, code, &dc, &ic, drctv);
+				printf("\n %s", buffer+k);
+				addData((buffer+k), data, &dc, drctv);
+				printf("\n %d", dc);
 				continue;
 			}
 		} else {
@@ -78,7 +80,7 @@ int main(int argc, char **argv){
 			if(drctv == lstring || drctv == ldata){
 				while(buffer[k]!='.') k++;
 				k = k + strlen(directiveList[drctv]);
-				addData((buffer+k), data, code, &dc, &ic, drctv);
+				addData((buffer+k), data, &dc, drctv);
 				continue;
 			}
 		}
@@ -215,18 +217,19 @@ int main(int argc, char **argv){
 		printf("\nCompile Errors detected");
 		exit(0);
 	}
-	
+	/*adjust the vlaue of data and string labels to ic+100*/
+	addVal(&labelTable, ic+100);
 	rewind(fd);
 	printList(labelTable);
 	secondIc = 0;
 	while(!feof(fd)){
-		int instruction;
+		int instruction, j=0;
 		char label[LABEL_LENGTH];
+		Node *node;
 		l=0;
 		k=0;
 		i=0;
-		int j = 0;
-		Node *node;
+		
 
 		/*reading line to the buffer*/
 		while((ch = fgetc(fd))!=EOF && ch!='\n'){
@@ -249,8 +252,6 @@ int main(int argc, char **argv){
 		}
 		
 		if((drctv = isDirective(buffer+k))==lstring || drctv==ldata){
-			l=sizeOfCode(buffer+k, drctv);
-			secondIc+=l;
 			continue;
 		} else if(drctv!=-1) {
 			if(addEntry(buffer+k, &labelTable)){
@@ -279,7 +280,7 @@ int main(int argc, char **argv){
 					if((node=searchNode(&labelTable,label))){
 						code[secondIc+1].bits = node->value;
 					} else {
-						printf("No such label %s", label);
+						printf("\nNo such data or string label %s in 1st operrand of : %s",label,buffer);
 						errorFlag++;
 					}
 				}
@@ -292,7 +293,7 @@ int main(int argc, char **argv){
 					if((node=searchNode(&labelTable,label))){
 						code[secondIc+2].bits = node->value;
 					} else {
-						printf("No such label in 2nd operrand of: %s",buffer);
+						printf("\nNo such data or string label %s in 2nd operrand of : %s",label,buffer);
 						errorFlag++;
 					}
 				}
@@ -312,7 +313,7 @@ int main(int argc, char **argv){
 					if(!(node=searchNode(&labelTable,label))){
 						code[secondIc+1].bits = node->value;
 					} else {
-						printf("No such label in: %s",buffer);
+						printf("\nNo such data or string label %s in operrand of : %s",label,buffer);
 						errorFlag++;
 					}
 				}
@@ -324,12 +325,71 @@ int main(int argc, char **argv){
 		}				
 	}
 
+	
+	
 	if(errorFlag){
 		printf("\nCompiling error detected");
 		exit(0);
 	}
-	str
-	fopen
-	while(pointer<secondIc){
+
+	/*---------------building the ob file--------------*/
+	fclose(fd);
+	strcpy(filename,*(argv+1));
+	strcat(filename,".ob");
+	if(!(fd = fopen(filename,"w"))){
+		printf("\nCreating obj file error, %s", filename);
+		exit(0);
+	}
+
+	fprintf(fd,"%d %d\n",ic,dc);
+	secondIc=0;
+	while(secondIc<ic){
+		binToOc(code[secondIc],writeLine);
+		fprintf(fd,"%d %s\n",secondIc+100,writeLine);
+		secondIc++;
+	}
+
+	/*----------building the entry file--------------*/
+	fclose(fd);
+	if(entryFlag){
+		Node *ptr = labelTable.head;
+		strcpy(filename,*(argv+1));
+		strcat(filename,".ent");
+
+		if(!(fd = fopen(filename,"w"))){
+			printf("\nCreating ent file error, %s", filename);
+			exit(0);
+		}
+
+		while(ptr){
+			if(ptr->ltype == lentry){
+				fprintf(fd,"%s %d\n",ptr->name,ptr->value);
+			}
+			ptr=ptr->next;
+		}
+		fclose(fd);
+	}
+
+	/*------------building the extern file---------*/
+	
+	if(externFlag){
+		Node *ptr = labelTable.head;
+		strcpy(filename,*(argv+1));
+		strcat(filename,".ext");
+
+		if(!(fd = fopen(filename,"w"))){
+			printf("\nCreating ent file error, %s", filename);
+			exit(0);
+		}
+
+		while(ptr){
+			if(ptr->ltype == lextern){
+				fprintf(fd,"%s %d\n",ptr->name,ptr->value);
+			}
+			ptr=ptr->next;
+		}
+		fclose(fd);
+	}
+
 	return 0;
 }

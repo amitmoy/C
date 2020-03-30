@@ -1,6 +1,6 @@
 #include "types.h"
 
-extern enum error errorFlag;
+extern int errorFlag;
 extern char *instructionList[];
 
 /*adds the new node if label was not found in list*/
@@ -52,7 +52,7 @@ void printList(List list){
 Node * searchNode(List *list, char *label){
 	Node *ptr = list->head;
 	while(ptr){
-		if(!strcmp(ptr->name, label)) return ptr;
+		if((!strcmp(ptr->name, label)) && (ptr->ltype == lstring || ptr->ltype == ldata)) return ptr;
 		ptr = ptr->next;
 	}
 	return NULL;
@@ -70,4 +70,14 @@ void printCode(Instruction toPrint){
 		mask = mask >> 1;
 	}
 	putchar('\n');
+}
+
+void addVal(List *list, int val){
+	Node *ptr = list->head;
+	while(ptr){
+		if(ptr->ltype == lstring || ptr->ltype == ldata){
+			ptr->value += val;
+		}
+		ptr = ptr->next;
+	}
 }
