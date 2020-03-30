@@ -5,7 +5,7 @@ Instruction code[MEM_SIZE-DATA_SIZE];
 Instruction data[DATA_SIZE];
 char *instructionList[]={"mov ","cmp ","add ","sub ","lea ","clr ","not ","inc ","dec ","jmp ","bne ","red ","prn ","jsr ","rts","stop"};
 char *directiveList[]={".string ",".data ",".extern ",".entry "};
-List labelTable;
+List labelTable, externTable;
 char label[LINE_LENGTH];
 enum Boolean labelFlag;
 int errorFlag;
@@ -18,7 +18,8 @@ int main(int argc, char **argv){
 	int i,ch,k=0,j,ic = 0, dc = 0, secondIc=0;
 	int drctv = -1;
 	int instruction, entryFlag = 1;
-	
+	labelTable.head = NULL;
+	externTable.head = NULL;
 
 	/*No files error*/
 	if(argc == 1){
