@@ -52,7 +52,7 @@ void printList(List list){
 Node * searchNode(List *list, char *label){
 	Node *ptr = list->head;
 	while(ptr){
-		if((!strcmp(ptr->name, label)) && (ptr->ltype == lstring || ptr->ltype == ldata)) return ptr;
+		if((!strcmp(ptr->name, label)) && (ptr->ltype == lstring || ptr->ltype == ldata || ptr->ltype == lextern)) return ptr;
 		ptr = ptr->next;
 	}
 	return NULL;

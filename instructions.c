@@ -220,7 +220,6 @@ int addExtern(char *str){
 	char exlabel[LINE_LENGTH] = {0};
 	while(str[i]!='.') i++;
 	i=i + strlen(".extern");
-	printf("addex start %d, ,%s,",i,str+i);
 	while(1){
 		switch(status){
 			case pree:
